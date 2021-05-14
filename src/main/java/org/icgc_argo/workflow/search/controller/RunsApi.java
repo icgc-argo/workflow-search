@@ -23,6 +23,7 @@ import javax.validation.Valid;
 import org.icgc_argo.workflow.search.model.common.RunId;
 import org.icgc_argo.workflow.search.model.common.RunRequest;
 import org.icgc_argo.workflow.search.model.wes.*;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -67,10 +68,9 @@ public interface RunsApi {
       })
   @RequestMapping(
       value = "/runs/{run_id}",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<RunResponse>> getRunLog(
+  Mono<RunResponse> getRunLog(
       @ApiParam(value = "", required = true) @PathVariable("run_id") String runId);
 
   @ApiOperation(
@@ -107,10 +107,9 @@ public interface RunsApi {
       })
   @RequestMapping(
       value = "/runs/{run_id}/status",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<RunStatus>> getRunStatus(
+  Mono<RunStatus> getRunStatus(
       @ApiParam(value = "", required = true) @PathVariable("run_id") String runId);
 
   @ApiOperation(
@@ -144,10 +143,9 @@ public interface RunsApi {
       })
   @RequestMapping(
       value = "/runs",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<RunListResponse>> listRuns(
+  Mono<RunListResponse> listRuns(
       @ApiParam(
               example = "10",
               value =
@@ -172,10 +170,9 @@ public interface RunsApi {
       })
   @RequestMapping(
       value = "/service-info",
-      produces = {"application/json"},
-      consumes = {"application/json"},
+      produces = MediaType.APPLICATION_JSON_VALUE,
       method = RequestMethod.GET)
-  Mono<ResponseEntity<ServiceInfo>> getServiceInfo();
+  Mono<ServiceInfo> getServiceInfo();
 
   @ApiOperation(
       value = "Run a workflow",
@@ -212,7 +209,12 @@ public interface RunsApi {
             message = "An unexpected error occurred.",
             response = ErrorResponse.class)
       })
-  Mono<ResponseEntity<RunId>> postRun(@Valid @RequestBody RunRequest runRequest);
+  @RequestMapping(
+          value = "/runs",
+          produces = MediaType.APPLICATION_JSON_VALUE,
+          consumes = MediaType.APPLICATION_JSON_VALUE,
+          method = RequestMethod.POST)
+  Mono<RunId> postRun(@Valid @RequestBody RunRequest runRequest);
 
   @ApiOperation(
       value = "Cancel a running workflow",
@@ -242,5 +244,9 @@ public interface RunsApi {
             message = "An unexpected error occurred.",
             response = ErrorResponse.class)
       })
-  Mono<ResponseEntity<RunId>> cancelRun(@Valid @RequestBody String runId);
+  @RequestMapping(
+          value = "/runs/{run_id}/cancel",
+          produces = MediaType.APPLICATION_JSON_VALUE,
+          method = RequestMethod.POST)
+  Mono<RunId> cancelRun(@Valid @PathVariable("run_id") String runId);
 }

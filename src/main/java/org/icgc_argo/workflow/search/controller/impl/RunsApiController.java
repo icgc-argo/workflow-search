@@ -29,51 +29,37 @@ import org.icgc_argo.workflow.search.model.wes.*;
 import org.icgc_argo.workflow.search.service.wes.WesRunService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class RunsApiController implements RunsApi {
 
   private final WesRunService wesRunService;
 
-  @GetMapping(value = "/runs/{run_id}")
-  public Mono<ResponseEntity<RunResponse>> getRunLog(@NonNull String runId) {
-    return wesRunService.getRunLog(runId).map(this::respondOk);
+  public Mono<RunResponse> getRunLog(@NonNull String runId) {
+    return wesRunService.getRunLog(runId);
   }
 
-  @GetMapping(value = "/runs/{run_id}/status")
-  public Mono<ResponseEntity<RunStatus>> getRunStatus(@NonNull String runId) {
-    return wesRunService.getRunStatusById(runId).map(this::respondOk);
+  public Mono<RunStatus> getRunStatus(@NonNull String runId) {
+    return wesRunService.getRunStatusById(runId);
   }
 
-  @GetMapping(value = "/runs")
-  public Mono<ResponseEntity<RunListResponse>> listRuns(Integer pageSize, Integer pageToken) {
-    return wesRunService.listRuns(pageSize, pageToken).map(this::respondOk);
+  public Mono<RunListResponse> listRuns(Integer pageSize, Integer pageToken) {
+    return wesRunService.listRuns(pageSize, pageToken);
   }
 
-  @GetMapping(value = "/service-info")
-  public Mono<ResponseEntity<ServiceInfo>> getServiceInfo() {
-    return wesRunService.getServiceInfo().map(this::respondOk);
+  public Mono<ServiceInfo> getServiceInfo() {
+    return wesRunService.getServiceInfo();
   }
 
-  @PostMapping(value = "/runs")
-  public Mono<ResponseEntity<RunId>> postRun(@Valid @RequestBody RunRequest runRequest) {
-    return wesRunService.run(runRequest).map(this::respondOk);
+  public Mono<RunId> postRun(RunRequest runRequest) {
+    return wesRunService.run(runRequest);
   }
 
-  @PostMapping(value = "/runs/{run_id}/cancel")
-  public Mono<ResponseEntity<RunId>> cancelRun(@Valid @PathVariable("run_id") String runId) {
-    return wesRunService.cancel(runId).map(this::respondOk);
-  }
-
-  private <T> ResponseEntity<T> respondOk(T response) {
-    return new ResponseEntity<T>(response, HttpStatus.OK);
+  public Mono<RunId> cancelRun(@NonNull String runId) {
+    return wesRunService.cancel(runId);
   }
 }

@@ -28,6 +28,8 @@ import com.pivotal.rabbitmq.source.Sender;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.elasticsearch.action.search.SearchResponse;
@@ -38,6 +40,7 @@ import org.icgc_argo.workflow.search.model.common.RunRequest;
 import org.icgc_argo.workflow.search.model.graphql.AggregationResult;
 import org.icgc_argo.workflow.search.model.graphql.SearchResult;
 import org.icgc_argo.workflow.search.model.graphql.Sort;
+import org.icgc_argo.workflow.search.model.wes.State;
 import org.icgc_argo.workflow.search.rabbitmq.SenderDTO;
 import org.icgc_argo.workflow.search.repository.RunRepository;
 import org.springframework.stereotype.Service;
@@ -53,6 +56,10 @@ public class RunService {
 
   @HasQueryAndMutationAccess
   public Mono<RunId> startRun(RunRequest runRequest) {
+    if (isNotValidRunRequest(runRequest)) {
+      return Mono.error(new Exception("Invalid run request!"));
+    }
+
     val runId = generateWesRunId();
     return Mono.just(SenderDTO.builder().runId(runId).runRequest(runRequest).build())
         .flatMap(sender::send)
@@ -62,10 +69,11 @@ public class RunService {
   @HasQueryAndMutationAccess
   public Mono<RunId> cancelRun(String runId) {
     return getRunByRunId(runId)
+        .filter(this::isCancellable)
         .map(run -> SenderDTO.builder().runId(runId).cancelRequest(true).build())
         .flatMap(sender::send)
         .map(o -> new RunId(runId))
-        .switchIfEmpty(Mono.error(new Exception("Can't cancel non existing run.")));
+        .switchIfEmpty(Mono.error(new Exception("Can't cancel run that is not in-flight or doesn't exist.")));
   }
 
   @HasQueryAccess
@@ -127,5 +135,16 @@ public class RunService {
   private static Run hitToRun(SearchHit hit) {
     val sourceMap = hit.getSourceAsMap();
     return Run.parse(sourceMap);
+  }
+
+  private Boolean isCancellable(Run run) {
+      val currentState = State.valueOf(run.getState());
+      return currentState.equals(State.INITIALIZING) || currentState.equals(State.QUEUED) || currentState.equals(State.RUNNING);
+  }
+
+  private Boolean isNotValidRunRequest(RunRequest runRequest) {
+      return !Optional.ofNullable(runRequest.getWorkflowEngineParams().getResume())
+              .orElse("")
+              .equals("false");
   }
 }
